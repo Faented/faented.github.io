@@ -1,0 +1,97 @@
+:root {
+    background-color: #1e1e1e;
+    color: #fefefe;
+}
+
+.glass-card {
+    margin: 0 auto;
+    padding: 2rem;
+    width: 320px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    animation: pulse 3s infinite;
+}
+
+.glass-card h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    background: linear-gradient(90deg, #ff7eb5, #8be1c6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.glass-card p {
+    margin-top: 1rem;
+    background: linear-gradient(90deg, #ff7eb5, #8be1c6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.glass-card:hover {
+    transform: scale(1.05) rotate(3deg);
+}
+
+body {
+    font-family: "Poppins", sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffd1dc;
+    color: #333;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-10px) scale(1.02);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.social-icons a {
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 8px;
+    transition: transform 0.3s;
+}
+
+.social-icons a:hover {
+    transform: scale(1.2);
+}
+
+@media (max-width: 480px) {
+    .glass-card {
+        width: 90%;
+        padding: 1.5rem;
+    }
+}
