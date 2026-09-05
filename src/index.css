@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+
+@layer base {
+    body {
+        @apply font-sans;
+        @apply select-none; /* Tailwind helper → user-select: none; */
+    }
+}
+
+@tailwind utilities;
+
+@layer utilities {
+    @keyframes float {
+        0% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+        100% {
+            transform: translateY(0);
+        }
+    }
+    .animate-float {
+        animation: float 6s ease-in-out infinite;
+    }
+    .overlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+            rgba(0, 0, 0, 0.15) 0%,
+            transparent 70%
+        );
+    }
+}
