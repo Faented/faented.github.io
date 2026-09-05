@@ -1,0 +1,12 @@
+# Node.js
+node_modules/
+
+# Build output
+/dist
+
+# Logs
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
