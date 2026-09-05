@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDisableContextMenu } from "./hooks/useDisableContextMenu";
 
-const backgroundImage = "./assets/background.jpg";
+const backgroundImage = "${import.meta.env.BASE_URL}background.jpg";
 
 interface GitHubUser {
   login: string;
