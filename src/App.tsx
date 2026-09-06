@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDisableContextMenu } from "./hooks/useDisableContextMenu";
 
-const backgroundImage = "${import.meta.env.BASE_URL}background.jpg";
+const backgroundImage = "/background.jpg";
 
 interface GitHubUser {
   login: string;
@@ -67,7 +67,7 @@ const App: React.FC = () => {
       {/* изображение */}
       <img
         src={backgroundImage}
-        alt=""
+        alt="Will be soon..."
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
       />
