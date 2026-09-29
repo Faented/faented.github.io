@@ -4,7 +4,13 @@ module.exports = {
     './src/**/*.{js,ts,jsx,tsx}'
   ],
   theme: {
-    extend: { fontFamily: { sans: ['Poppins', 'sans-serif'] } }
+    extend: {
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace']
+      },
+      colors: { accent: '#5eead4' }
+    }
   },
   plugins: []
 }

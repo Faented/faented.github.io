@@ -18,14 +18,20 @@ There are no tests and no linter configured. `npm run build` is the only correct
 
 Pushing to `main` triggers `.github/workflows/deploy.yml`. It runs `npm ci && npm run build` on Node 20 and publishes `dist/` through GitHub Pages Actions (`upload-pages-artifact` / `deploy-pages`). The `deploy` script in package.json (`gh-pages -d dist`) is a legacy manual path; CI is the real deploy mechanism.
 
-The site is served from the domain root, so Vite has no `base` configured and assets use absolute paths like `/background.jpg`, which comes from `public/`.
+The site is served from the domain root, so Vite has no `base` configured and assets use absolute paths like `/background.mp4`, which comes from `public/`.
 
 ## Architecture
 
-Nearly all UI lives in `src/App.tsx`:
-- On mount, it fetches the profile (avatar, name, bio) at runtime from the public GitHub API (`https://api.github.com/users/Faented`). To change the displayed name or bio, edit the GitHub profile, not the code.
-- Social links are an inline array of `{ href, label, icon }` with inline SVG icons.
-- A cursor spotlight effect: a `mousemove` listener writes the `--mouse-x` / `--mouse-y` CSS custom properties onto an overlay ref, and CSS in `src/index.css` reads them. Updates go straight to the DOM rather than through React state, so the component doesn't re-render on every mouse move.
-- `useDisableContextMenu` (in `src/hooks/`) blocks the right-click menu site-wide.
+On first visit in a tab, `src/components/Boot.tsx` shows a black "press any key to boot" screen. A click or key runs a short fake boot log with a progress bar, then calls `onDone`. `App.tsx` stores `booted` in `sessionStorage`, so the boot screen is skipped on reloads within the same tab, and it renders the terminal only after boot.
 
-The Poppins font is loaded from Google Fonts in `index.html` and mapped to Tailwind's `font-sans` in `tailwind.config.js`. Some code comments are in Russian.
+The UI is a square glass "terminal window" (`src/components/Window.tsx`) over `src/components/Background.tsx`: a black background with `public/background.mp4` on top. The video starts downloading immediately, so it loads while the boot screen waits for input, and fades in only once `visible` is set (after boot) and it's actually playing. It's skipped under `prefers-reduced-motion` or Save-Data, paused on hidden tabs, and dropped on error, which leaves plain black. There is intentionally no image fallback. The MP4 should keep `moov` before `mdat` (faststart) so it can play while still downloading.
+
+- **Routing** is hash-based (`src/hooks/useHashRoute.ts`): `#/` shows the home page and `#/notes[/<slug>]` shows notes. GitHub Pages can't rewrite `/notes` to `index.html`, so stay on hash URLs rather than adding path routes. `App.tsx` matches the route and picks the page.
+- **Home** (`src/pages/Home.tsx`) gets its avatar, name and bio at runtime from `https://api.github.com/users/Faented`. To change the displayed name or bio, edit the GitHub profile, not the code. Links are the `links` array; entries marked `external` open in a new tab.
+- **Terminal** (`src/components/Shell.tsx`) is an interactive shell. To add a command, add an entry to the `commands` map (`name: [help text, handler]`); an empty help text hides the command from `help`. Handlers get `(args, ctx)`, where `ctx` holds the current directory `cwd` and a `cd` setter. The virtual filesystem is one level deep: `~` → the keys of `dirs` (`links`, `notes`). `resolveDir` handles relative paths, `..`, and `~`; files exist only in `notes/` (the `.md` notes). To add a folder, add a key to `dirs` and, if it holds files, extend `files()`. The `initial` commands run on mount as ordinary history, so they scroll and `clear` removes them.
+- **Prompt** `<user>@<host>` comes from `TerminalContext` (`src/terminal.tsx`): `user` is the lowercased GitHub login, and `host` is `__COMMIT__`, the short SHA injected by `define` in `vite.config.ts` (`GITHUB_SHA` in CI, otherwise `git rev-parse HEAD`). Changing `define` requires restarting the dev server.
+- **Notes** are Markdown files in `src/notes/`, bundled at build time by `import.meta.glob(..., { query: "?raw", eager: true })` in `src/notes.ts`. Name a file `YYYY-MM-DD-slug.md` and make its first line `# Title`. Notes are sorted newest first by filename, and the body is rendered as plain preformatted text (no Markdown parser).
+- **Cursor spotlight:** a `mousemove` listener in `App.tsx` writes `--mouse-x` / `--mouse-y` onto the `.overlay` element, and CSS in `src/index.css` reads them. Updates go straight to the DOM rather than through React state, so nothing re-renders on mouse move.
+- `useDisableContextMenu` blocks the right-click menu, and `body` has `select-none`. Note bodies opt back into selection with `select-text`.
+
+Fonts: Poppins (`font-sans`, profile header) and JetBrains Mono (`font-mono`, terminal), both loaded from Google Fonts in `index.html`. The `accent` color (teal) is defined in `tailwind.config.js`. Some code comments are in Russian.
