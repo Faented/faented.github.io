@@ -15,7 +15,7 @@ interface Ctx {
   cd: (dir: string) => void;
 }
 
-const TELEGRAM = "https://t.me/tryhaxme";
+const TELEGRAM = "https://t.me/faented";
 
 const LINKS = [
   { name: "telegram", href: TELEGRAM },
