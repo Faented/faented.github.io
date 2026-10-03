@@ -7,8 +7,7 @@ import { Window } from "./components/Window";
 import { Home, GitHubUser } from "./pages/Home";
 import { Notes } from "./pages/Notes";
 import { TerminalContext } from "./terminal";
-
-const GITHUB_USERNAME = "Faented";
+import { GITHUB_USERNAME } from "./config";
 
 const App: React.FC = () => {
   useDisableContextMenu();
@@ -65,7 +64,7 @@ const App: React.FC = () => {
   const notesMatch = route.match(/^\/notes(?:\/(.+))?$/);
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen overflow-hidden py-10">
+    <div className="relative flex items-center justify-center min-h-screen min-h-[100dvh] overflow-hidden py-10">
       <Background visible={booted} />
       {!booted && <Boot onDone={finishBoot} />}
       {booted && (
@@ -84,7 +83,7 @@ const App: React.FC = () => {
             </Window>
           ) : (
             <Window path={cwd ? `~/${cwd}` : "~"}>
-              <Home user={user} username={GITHUB_USERNAME} />
+              <Home user={user} />
             </Window>
           )}
         </TerminalContext.Provider>

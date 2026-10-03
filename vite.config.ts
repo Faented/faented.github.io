@@ -15,6 +15,9 @@ const commit = (() => {
   }
 })();
 
+// кавычка в адресе или title ссылки не должна ломать HTML-атрибут
+const attr = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
 // записки пишешь ты сам, поэтому HTML из Markdown доверенный.
 // внешние ссылки открываем в новой вкладке, чтобы не уходить с сайта
 const md = new Marked({
@@ -24,7 +27,7 @@ const md = new Marked({
     link({ href, title, tokens }) {
       const text = this.parser.parseInline(tokens);
       const attrs = /^https?:\/\//.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
-      return `<a href="${href}"${title ? ` title="${title}"` : ''}${attrs}>${text}</a>`;
+      return `<a href="${attr(href)}"${title ? ` title="${attr(title)}"` : ''}${attrs}>${text}</a>`;
     },
   },
 });

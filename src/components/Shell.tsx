@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Prompt, PromptPrefix } from "./Prompt";
 import { useTerminal } from "../terminal";
 import { notes } from "../notes";
+import { FALLBACK_BIO, LINKS } from "../config";
 
 interface Entry {
   cmd: string;
@@ -14,13 +15,6 @@ interface Ctx {
   cwd: string;
   cd: (dir: string) => void;
 }
-
-const TELEGRAM = "https://t.me/faented";
-
-const LINKS = [
-  { name: "telegram", href: TELEGRAM },
-  { name: "github", href: "https://github.com/Faented" },
-];
 
 const item = "hover:text-accent transition-colors";
 const err = (text: string) => <span className="text-red-400">{text}</span>;
@@ -118,7 +112,7 @@ const cat = ([target]: string[], { cwd }: Ctx) => {
 // bio приходит из GitHub API асинхронно — компонент перерисуется, когда оно загрузится
 const WhoAmI: React.FC = () => {
   const { bio } = useTerminal();
-  return <>{bio ?? "love cats · addict of caffeine & computer · R&D"}</>;
+  return <>{bio ?? FALLBACK_BIO}</>;
 };
 
 // команды: имя → [описание, обработчик]; обработчик возвращает вывод. Пустое описание — скрыта из help
@@ -138,16 +132,17 @@ const commands: Record<string, [string, (args: string[], ctx: Ctx) => React.Reac
   cd: ["cd папка | .. | ~", cd],
   pwd: ["где я", (_, { cwd }) => (cwd ? `/home/faented/${cwd}` : "/home/faented")],
   cat: ["cat notes/файл.md, без аргумента — мяу", cat],
-  open: ["open telegram | notes", ([target]) => {
-    if (target === "telegram") {
-      window.open(TELEGRAM, "_blank", "noopener,noreferrer");
-      return "> opening telegram...";
+  open: [`open ${[...LINKS.map((l) => l.name), "notes"].join(" | ")}`, ([target]) => {
+    const link = LINKS.find((l) => l.name === target?.toLowerCase());
+    if (link) {
+      window.open(link.href, "_blank", "noopener,noreferrer");
+      return `> opening ${link.name}...`;
     }
     if (target === "notes") {
       window.location.hash = "#/notes";
       return null;
     }
-    return "usage: open telegram | notes";
+    return `usage: open ${[...LINKS.map((l) => l.name), "notes"].join(" | ")}`;
   }],
   notes: ["последние записки", () =>
     notes.length === 0 ? "> пусто" : (
@@ -181,28 +176,48 @@ const exec = (line: string, ctx: Ctx): Entry => {
 // выполняем как обычные команды, чтобы они были частью истории: скроллятся и стираются `clear`
 const initial = ["whoami", "help"];
 
+// экран и история ввода живут дольше компонента: ушёл в записки и вернулся — терминал тот же
+const session: { screen: Entry[] | null; typed: string[] } = { screen: null, typed: [] };
+
+// мышь есть — значит, есть и клавиатура: фокусируем ввод сразу. На телефоне не трогаем, иначе выскочит клавиатура
+const finePointer = () => window.matchMedia("(pointer: fine)").matches;
+
 export const Shell: React.FC = () => {
   const { cwd, setCwd } = useTerminal();
-  const [history, setHistory] = useState<Entry[]>(() =>
-    initial.map((line) => exec(line, { cwd: "", cd: () => {} })),
+  // screen — что видно на экране (clear стирает), typed — что ты вводил (для ↑/↓, clear не трогает)
+  const [screen, setScreen] = useState<Entry[]>(
+    () => session.screen ?? initial.map((line) => exec(line, { cwd: "", cd: () => {} })),
   );
+  const [typed, setTyped] = useState<string[]>(session.typed);
   const [input, setInput] = useState("");
-  const [pos, setPos] = useState(-1); // позиция в истории для ↑/↓
+  const [pos, setPos] = useState(-1); // позиция в typed для ↑/↓
   const inputRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const outRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "nearest" });
-  }, [history]);
+    session.screen = screen;
+    session.typed = typed;
+  }, [screen, typed]);
+
+  useEffect(() => {
+    if (finePointer()) inputRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // прокручиваем только сам терминал, а не всю страницу
+  useEffect(() => {
+    const el = outRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [screen]);
 
   const run = (raw: string) => {
     const line = raw.trim();
     setInput("");
     setPos(-1);
     if (!line) return;
-    if (line.split(/\s+/)[0].toLowerCase() === "clear") return setHistory([]);
+    setTyped((t) => (t[t.length - 1] === line ? t : [...t, line]));
+    if (line.split(/\s+/)[0].toLowerCase() === "clear") return setScreen([]);
     const entry = exec(line, { cwd, cd: setCwd });
-    setHistory((h) => [...h, entry]);
+    setScreen((h) => [...h, entry]);
   };
 
   // Tab: первое слово дополняем командой, остальные — папкой или файлом
@@ -225,7 +240,7 @@ export const Shell: React.FC = () => {
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const cmds = history.map((h) => h.cmd);
+    const cmds = typed;
     if (e.key === "Enter") run(input);
     else if (e.key === "ArrowUp" && cmds.length) {
       e.preventDefault();
@@ -243,16 +258,30 @@ export const Shell: React.FC = () => {
     }
   };
 
+  // клик по терминалу ставит курсор в ввод — но не когда жмут ссылку или выделяют текст,
+  // и не на телефоне, где это открыло бы клавиатуру при каждой прокрутке
+  const focusInput = (e: React.MouseEvent) => {
+    if ((e.target as Element).closest("a")) return;
+    if (window.getSelection()?.toString()) return;
+    if (!finePointer() && e.target !== e.currentTarget) return;
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   return (
-    <div onClick={() => inputRef.current?.focus()} className="cursor-text">
-      <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1">
-        {history.map((h, i) => (
+    <div onClick={focusInput} className="cursor-text">
+      <div
+        ref={outRef}
+        role="log"
+        aria-live="polite"
+        aria-label="terminal output"
+        className="max-h-64 overflow-y-auto no-scrollbar space-y-1"
+      >
+        {screen.map((h, i) => (
           <div key={i}>
             <Prompt cmd={h.cmd} path={h.path} />
             {h.out != null && <div className="text-white/70">{h.out}</div>}
           </div>
         ))}
-        <div ref={endRef} />
       </div>
 
       <label className="flex">
@@ -265,7 +294,11 @@ export const Shell: React.FC = () => {
           spellCheck={false}
           autoComplete="off"
           aria-label="terminal input"
-          className="flex-1 min-w-0 bg-transparent outline-none caret-accent"
+          enterKeyHint="send"
+          autoCapitalize="off"
+          autoCorrect="off"
+          // 16px на телефоне: при меньшем шрифте iOS Safari зумит страницу при фокусе
+          className="flex-1 min-w-0 bg-transparent outline-none caret-accent text-base sm:text-sm"
         />
       </label>
     </div>
