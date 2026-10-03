@@ -3,7 +3,8 @@
 // Поэтому при сборке рядом с приложением генерируются обычные статические страницы:
 //   /notes/                 — список записок
 //   /notes/<slug>/          — каждая записка целиком
-//   /404.html, /sitemap.xml, /robots.txt
+//   /404.html, /sitemap.xml, /robots.txt, /feed.xml (RSS), /.well-known/security.txt
+//   /llms.txt, /llms-full.txt, /notes/<slug>.md — для AI
 // а в index.html подставляются meta-теги, JSON-LD и текстовая версия главной для роботов.
 
 import { execSync } from "node:child_process";
@@ -51,9 +52,27 @@ export interface BuiltNote {
   title: string;
   body: string;
   html: string;
-  description: string; // первые ~155 символов текста — для meta description
+  description: string; // из front matter, иначе первые ~155 символов текста — для meta description
+  tags: string[]; // из front matter: keywords в JSON-LD, article:tag, категории в RSS
   modified: string; // дата последнего коммита файла (ISO), для sitemap
 }
+
+// необязательный front matter в начале записки:
+//   ---
+//   description: о чём записка, одной фразой — уйдёт в сниппет поиска
+//   tags: web, security, ai
+//   ---
+//   # Заголовок
+const frontMatter = (text: string): [Record<string, string>, string] => {
+  const m = text.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!m) return [{}, text];
+  const meta: Record<string, string> = {};
+  for (const line of m[1].split("\n")) {
+    const i = line.indexOf(":");
+    if (i > 0) meta[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim();
+  }
+  return [meta, text.slice(m[0].length)];
+};
 
 // HTML → текст: блочные теги дают пробел между абзацами, а строчные (<strong>, <code>) исчезают бесследно,
 // чтобы не было «Markdown -файлы»
@@ -69,17 +88,25 @@ const plain = (html: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const gitDate = (file: string) => {
+const git = (args: string) => {
   try {
-    return execSync(`git log -1 --format=%cI -- "${file}"`).toString().trim();
+    return execSync(`git ${args}`, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
   } catch {
     return "";
   }
 };
+const gitDate = (file: string) => git(`log -1 --format=%cI -- "${file}"`);
+
+// возраст и свежесть сайта по git: первый коммит — когда сайт появился, последний — когда менялся.
+// Google рекомендует эти даты для ProfilePage. В CI нужна полная история (fetch-depth: 0)
+const now = new Date().toISOString();
+const SITE_CREATED = git("log --reverse --format=%cI").split("\n")[0] || now;
+const SITE_MODIFIED = git("log -1 --format=%cI") || now;
 
 export const readNote = (file: string): BuiltNote => {
   const slug = file.replace(/^.*[\\/]|\.md$/g, "");
-  const [first, ...rest] = readFileSync(file, "utf-8").replace(/\r\n/g, "\n").trim().split("\n");
+  const [meta, text0] = frontMatter(readFileSync(file, "utf-8").replace(/\r\n/g, "\n").trim());
+  const [first, ...rest] = text0.trim().split("\n");
   const hasTitle = first.startsWith("# ");
   const body = (hasTitle ? rest : [first, ...rest]).join("\n").trim();
   const html = md.parse(body, { async: false });
@@ -91,7 +118,8 @@ export const readNote = (file: string): BuiltNote => {
     title: hasTitle ? first.slice(2).trim() : slug.slice(11),
     body,
     html,
-    description: text.length > 155 ? `${text.slice(0, 154).trimEnd()}…` : text,
+    description: meta.description || (text.length > 155 ? `${text.slice(0, 154).trimEnd()}…` : text),
+    tags: (meta.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean),
     modified: gitDate(file) || date,
   };
 };
@@ -122,9 +150,15 @@ const noteUrl = (slug: string) => url(`/notes/${encodeURIComponent(slug)}/`);
 const prompt = (path: string, cmd: string) =>
   `<div><span class="u">${user}</span><span class="d">:${path}$ </span>${esc(cmd)}</div>`;
 
+// одна сущность «ты» на весь сайт: страницы ссылаются на неё по @id, а sameAs связывает с профилями.
+// Так поисковик и AI склеивают сайт, GitHub и Telegram в одного человека
+const ME = `${SITE_URL}/#me`;
 const person = {
   "@type": "Person",
+  "@id": ME,
   name: GITHUB_USERNAME,
+  alternateName: [user, `@${GITHUB_USERNAME}`],
+  identifier: GITHUB_USERNAME,
   url: SITE_URL,
   image: AVATAR,
   description: ABOUT,
@@ -135,12 +169,28 @@ const person = {
 const jsonLd = (data: object) =>
   `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
 
-// общие meta для всех страниц: описание, canonical, превью в соцсетях
-const headMeta = (o: { title: string; description: string; path: string; type?: string }) => `
+// хлебные крошки: Google показывает их в выдаче вместо голого URL
+const breadcrumbs = (items: [string, string][]) => ({
+  "@type": "BreadcrumbList",
+  itemListElement: items.map(([name, path], i) => ({ "@type": "ListItem", position: i + 1, name, item: url(path) })),
+});
+
+// общие meta для всех страниц: описание, canonical, превью в соцсетях, директивы для сниппетов
+const headMeta = (o: {
+  title: string;
+  description: string;
+  path: string;
+  type?: string;
+  noindex?: boolean;
+  article?: { published: string; modified: string; tags: string[] };
+}) => `
 <title>${esc(o.title)}</title>
 <meta name="description" content="${esc(o.description)}" />
+<meta name="robots" content="${o.noindex ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"}" />
 <link rel="canonical" href="${url(o.path)}" />
 <meta name="author" content="${GITHUB_USERNAME}" />
+${LINKS.map((l) => `<link rel="me" href="${l.href}" />`).join("\n")}
+<link rel="alternate" type="application/rss+xml" title="Записки ${GITHUB_USERNAME}" href="${url("/feed.xml")}" />
 <meta property="og:type" content="${o.type ?? "website"}" />
 <meta property="og:locale" content="ru_RU" />
 <meta property="og:site_name" content="${SITE_URL.replace(/^https:\/\//, "")}" />
@@ -151,6 +201,16 @@ const headMeta = (o: { title: string; description: string; path: string; type?: 
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Окно терминала: ${user} — ${esc(FALLBACK_BIO)}" />
+${
+  o.article
+    ? [
+        `<meta property="article:published_time" content="${o.article.published}" />`,
+        `<meta property="article:modified_time" content="${o.article.modified}" />`,
+        `<meta property="article:author" content="${SITE_URL}" />`,
+        ...o.article.tags.map((t) => `<meta property="article:tag" content="${esc(t)}" />`),
+      ].join("\n")
+    : ""
+}
 <meta name="twitter:card" content="summary_large_image" />`;
 
 // одна тема на все статические страницы — тот же стеклянный терминал, что и в приложении
@@ -199,13 +259,14 @@ const page = (o: {
   body: string;
   ld?: object;
   noindex?: boolean;
+  article?: { published: string; modified: string; tags: string[] };
   markdown?: string; // адрес .md-версии страницы — AI читают её проще, чем HTML
 }) => `<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-${o.noindex ? '<meta name="robots" content="noindex" />' : ""}${headMeta(o)}
+${headMeta(o)}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 ${o.markdown ? `<link rel="alternate" type="text/markdown" href="${o.markdown}" />` : ""}
@@ -234,28 +295,41 @@ const notePage = (n: BuiltNote) =>
     description: n.description || SITE_DESCRIPTION,
     path: `/notes/${encodeURIComponent(n.slug)}/`,
     type: "article",
+    article: { published: n.date, modified: n.modified, tags: n.tags },
     markdown: `/notes/${encodeURIComponent(n.slug)}.md`,
     windowTitle: `~/notes/${n.slug}`,
     ld: {
       "@context": "https://schema.org",
-      "@type": "BlogPosting",
-      headline: n.title,
-      description: n.description,
-      datePublished: n.date,
-      dateModified: n.modified,
-      inLanguage: "ru",
-      url: noteUrl(n.slug),
-      mainEntityOfPage: noteUrl(n.slug),
-      image: url("/og.png"),
-      author: person,
+      "@graph": [
+        {
+          "@type": "BlogPosting",
+          headline: n.title,
+          description: n.description,
+          datePublished: n.date,
+          dateModified: n.modified,
+          inLanguage: "ru",
+          url: noteUrl(n.slug),
+          mainEntityOfPage: noteUrl(n.slug),
+          image: url("/og.png"),
+          wordCount: plain(n.html).split(" ").filter(Boolean).length,
+          ...(n.tags.length && { keywords: n.tags.join(", ") }),
+          isPartOf: { "@type": "Blog", "@id": url("/notes/#blog") },
+          author: person,
+        },
+        breadcrumbs([
+          [GITHUB_USERNAME, "/"],
+          ["Записки", "/notes/"],
+          [n.title, `/notes/${encodeURIComponent(n.slug)}/`],
+        ]),
+      ],
     },
     body: `<article>
 ${prompt("~/notes", `cat ${n.slug}.md`)}
 <h1>${esc(n.title)}</h1>
-<time class="date" datetime="${n.date}">${n.date}</time>
+<time class="date" datetime="${n.date}">${n.date}</time>${n.tags.length ? ` <span class="d">· ${n.tags.map(esc).join(", ")}</span>` : ""}
 <div class="md">${n.html}</div>
 </article>
-<nav class="nav"><a href="/notes/">[..] все записки</a><a href="/#/notes/${encodeURIComponent(n.slug)}">[открыть в терминале]</a></nav>`,
+<nav class="nav" aria-label="Навигация"><a href="/notes/">[..] все записки</a><a href="/#/notes/${encodeURIComponent(n.slug)}">[открыть в терминале]</a><a href="/">[~] ${GITHUB_USERNAME}</a></nav>`,
   });
 
 const noteList = (notes: BuiltNote[]) =>
@@ -276,17 +350,32 @@ const notesIndexPage = (notes: BuiltNote[]) =>
     windowTitle: "~/notes",
     ld: {
       "@context": "https://schema.org",
-      "@type": "Blog",
-      name: `Записки ${GITHUB_USERNAME}`,
-      url: url("/notes/"),
-      inLanguage: "ru",
-      author: person,
-      blogPost: notes.map((n) => ({ "@type": "BlogPosting", headline: n.title, url: noteUrl(n.slug), datePublished: n.date })),
+      "@graph": [
+        {
+          "@type": "Blog",
+          "@id": url("/notes/#blog"),
+          name: `Записки ${GITHUB_USERNAME}`,
+          url: url("/notes/"),
+          inLanguage: "ru",
+          author: person,
+          blogPost: notes.map((n) => ({
+            "@type": "BlogPosting",
+            headline: n.title,
+            url: noteUrl(n.slug),
+            datePublished: n.date,
+            dateModified: n.modified,
+          })),
+        },
+        breadcrumbs([
+          [GITHUB_USERNAME, "/"],
+          ["Записки", "/notes/"],
+        ]),
+      ],
     },
     body: `${prompt("~", "ls notes/")}
 <h1>Записки</h1>
 ${noteList(notes)}
-<nav class="nav"><a href="/">[cd ~]</a></nav>`,
+<nav class="nav" aria-label="Навигация"><a href="/">[cd ~] ${GITHUB_USERNAME}</a><a href="/feed.xml">[rss]</a></nav>`,
   });
 
 // путь показывается скриптом: страница одна на все несуществующие адреса
@@ -310,11 +399,12 @@ addEventListener("keydown", function () { location.href = "/"; });
 </script>`,
   });
 
+// lastmod — только реальные изменения (даты коммитов), а не «сегодня» при каждой сборке:
+// если lastmod врёт, Google перестаёт ему доверять и обходит сайт реже
 const sitemap = (notes: BuiltNote[]) => {
-  const today = new Date().toISOString().slice(0, 10);
-  const latest = notes.map((n) => n.modified.slice(0, 10)).sort().pop() ?? today;
+  const latest = notes.map((n) => n.modified.slice(0, 10)).sort().pop() ?? SITE_MODIFIED.slice(0, 10);
   const entries = [
-    { loc: url("/"), lastmod: today, priority: "1.0" },
+    { loc: url("/"), lastmod: SITE_MODIFIED.slice(0, 10), priority: "1.0" },
     { loc: url("/notes/"), lastmod: latest, priority: "0.8" },
     ...notes.map((n) => ({ loc: noteUrl(n.slug), lastmod: n.modified.slice(0, 10), priority: "0.6" })),
   ];
@@ -352,6 +442,52 @@ Allow: /
 Sitemap: ${url("/sitemap.xml")}
 `;
 
+// ---------- RSS ----------
+
+// лента записок: агрегаторы, читалки и поисковики подписываются на неё и узнают о новых записках сами
+const cdata = (s: string) => `<![CDATA[${s.replace(/]]>/g, "]]]]><![CDATA[>")}]]>`;
+const rfc822 = (iso: string) => new Date(iso).toUTCString();
+
+const feed = (notes: BuiltNote[]) => `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+  <title>Записки ${esc(GITHUB_USERNAME)}</title>
+  <link>${url("/notes/")}</link>
+  <atom:link href="${url("/feed.xml")}" rel="self" type="application/rss+xml" />
+  <description>${esc(ABOUT)}</description>
+  <language>ru</language>
+  <lastBuildDate>${rfc822(notes[0]?.modified ?? SITE_MODIFIED)}</lastBuildDate>
+  <image><url>${url("/apple-touch-icon.png")}</url><title>Записки ${esc(GITHUB_USERNAME)}</title><link>${url("/notes/")}</link></image>
+${notes
+  .map(
+    (n) => `  <item>
+    <title>${esc(n.title)}</title>
+    <link>${noteUrl(n.slug)}</link>
+    <guid isPermaLink="true">${noteUrl(n.slug)}</guid>
+    <pubDate>${rfc822(n.date)}</pubDate>
+    <description>${esc(n.description)}</description>
+${n.tags.map((t) => `    <category>${esc(t)}</category>`).join("\n")}
+    <content:encoded>${cdata(n.html)}</content:encoded>
+  </item>`,
+  )
+  .join("\n")}
+</channel>
+</rss>
+`;
+
+// ---------- security.txt (RFC 9116) ----------
+
+// куда сообщать об уязвимостях. Expires обязателен и обновляется каждой сборкой
+const securityTxt = () => {
+  const expires = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().replace(/\.\d+Z$/, "Z");
+  return `Contact: ${LINKS.find((l) => l.name === "telegram")?.href ?? url("/")}
+Contact: ${LINKS.find((l) => l.name === "github")?.href ?? url("/")}
+Expires: ${expires}
+Preferred-Languages: ru, en
+Canonical: ${url("/.well-known/security.txt")}
+`;
+};
+
 // ---------- для AI: llms.txt (стандарт llmstxt.org) и Markdown-версии ----------
 
 const linksMd = () => LINKS.map((l) => `- [${l.name}](${l.href})`).join("\n");
@@ -375,6 +511,7 @@ ${notes.length ? notes.map((n) => `- [${n.title}](${url(`/notes/${encodeURICompo
 ## Optional
 
 - [Весь контент одним файлом](${url("/llms-full.txt")})
+- [RSS записок](${url("/feed.xml")})
 - [Sitemap](${url("/sitemap.xml")})
 `;
 
@@ -406,15 +543,28 @@ const homeHead = () =>
   jsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "WebSite", name: SITE_TITLE, url: SITE_URL, inLanguage: "ru", author: { "@id": `${SITE_URL}/#me` } },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#site`,
+        name: SITE_TITLE,
+        alternateName: GITHUB_USERNAME,
+        url: SITE_URL,
+        description: SITE_DESCRIPTION,
+        inLanguage: "ru",
+        author: { "@id": ME },
+        publisher: { "@id": ME },
+      },
       {
         "@type": "ProfilePage",
         url: SITE_URL,
         name: SITE_TITLE,
         inLanguage: "ru",
-        mainEntity: { "@id": `${SITE_URL}/#me` },
+        isPartOf: { "@id": `${SITE_URL}/#site` },
+        dateCreated: SITE_CREATED,
+        dateModified: SITE_MODIFIED,
+        mainEntity: { "@id": ME },
       },
-      { ...person, "@id": `${SITE_URL}/#me` },
+      person,
     ],
   });
 
@@ -442,6 +592,8 @@ export const seoPlugin = (): Plugin => ({
     emit("notes/index.html", notesIndexPage(notes));
     for (const n of notes) emit(`notes/${n.slug}/index.html`, notePage(n));
     emit("sitemap.xml", sitemap(notes));
+    emit("feed.xml", feed(notes));
+    emit(".well-known/security.txt", securityTxt());
     emit("robots.txt", robots());
     emit("llms.txt", llmsTxt(notes));
     emit("llms-full.txt", llmsFullTxt(notes));

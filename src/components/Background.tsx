@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { isBot } from "../bot";
 
-// видео тяжёлое и не нужно, если человек просит меньше анимаций или экономит трафик
+// видео тяжёлое и не нужно, если человек просит меньше анимаций или экономит трафик,
+// и роботам: им 2.4 МБ фона только замедляют рендер
 const videoAllowed = () => {
+  if (isBot()) return false;
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
   return !reduced && !saveData;

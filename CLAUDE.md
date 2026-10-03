@@ -35,7 +35,16 @@ The app is a hash-routed SPA behind a click-to-boot screen, which search engines
 - `seoPlugin`:
   - fills `<!--seo:head-->` in `index.html` with title, description, canonical, Open Graph and JSON-LD (`WebSite` + `ProfilePage` + `Person`);
   - fills `<!--seo:fallback-->` inside `#root` with a plain-HTML version of the home page. React replaces it on mount; CSS shows it to people only if JS fails to start within 3s;
-  - emits `notes/index.html`, `notes/<slug>/index.html` (full note, `BlogPosting` JSON-LD), `404.html`, `sitemap.xml` (lastmod from the git commit date of each note) and `robots.txt`.
+  - emits `notes/index.html`, `notes/<slug>/index.html` (full note, `BlogPosting` + `BreadcrumbList` JSON-LD), `404.html`, `sitemap.xml`, `feed.xml` (RSS 2.0 with full HTML in `content:encoded`), `.well-known/security.txt` (RFC 9116; `Expires` is refreshed each build) and `robots.txt`.
+
+Every page's `<head>` comes from `headMeta()`, which emits:
+- a `robots` directive allowing large image previews and full snippets;
+- `rel="me"` links for every `LINKS` entry, plus the RSS `alternate` link;
+- `article:*` meta on notes.
+
+The JSON-LD shares one `Person` (`@id` `/#me`) across all pages. `ProfilePage` carries `dateCreated`/`dateModified` from the first and last git commit. Sitemap `lastmod` values are real commit dates, never "today": the home page uses HEAD's date, and each note uses its file's last commit. Faking `lastmod` makes Google ignore it.
+
+Notes may start with optional front matter: `---`, then `description: …`, then `tags: a, b`, then `---`, before the `# Title`. `description` overrides the auto-generated snippet; `tags` feed `keywords`, `article:tag` and RSS categories. Set both on new notes; they are the main per-page SEO lever.
 
 For AI search and assistants (most of their crawlers don't run JS):
 - `llms.txt` (llmstxt.org format) is a short Markdown map of who/what/where;
@@ -46,7 +55,7 @@ For AI search and assistants (most of their crawlers don't run JS):
 
 Keep `ABOUT` strictly factual: assistants quote it verbatim when asked about the author.
 
-The static pages are standalone HTML with inline CSS (`STYLE`) that mimics the terminal; they link to the SPA via `/#/notes/<slug>`. When you change the look of `.md` in `src/index.css`, mirror it in `STYLE`. `App.tsx` skips the boot screen for crawlers (`isBot()`), and sets `document.title` per route. Imports inside the Vite config graph use explicit `.ts` extensions (`allowImportingTsExtensions`), which Vite's native config loader requires.
+The static pages are standalone HTML with inline CSS (`STYLE`) that mimics the terminal; they link to the SPA via `/#/notes/<slug>`. When you change the look of `.md` in `src/index.css`, mirror it in `STYLE`. `isBot()` in `src/bot.ts` matches exact crawler names only. Never add generic words like `google`, `claude`, `gpt` or `telegram`: they match real browsers, such as the Claude app's browser or Telegram's in-app browser, and those people would lose the boot screen. For bots, `App.tsx` skips the boot screen and `Background` skips the video. `App.tsx` also sets `document.title` per route. Imports inside the Vite config graph use explicit `.ts` extensions (`allowImportingTsExtensions`), which Vite's native config loader requires.
 
 On first visit in a tab, `src/components/Boot.tsx` shows a black "press any key to boot" screen. A click or key runs a short fake boot log with a progress bar, then calls `onDone`. `App.tsx` stores `booted` in `sessionStorage`, so the boot screen is skipped on reloads within the same tab. It's also skipped when the page opens on any hash route other than `#/`, so deep links to notes go straight to content. The terminal renders only after boot.
 

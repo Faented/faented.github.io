@@ -9,14 +9,7 @@ import { Notes } from "./pages/Notes";
 import { TerminalContext } from "./terminal";
 import { GITHUB_USERNAME, SITE_TITLE } from "./config";
 import { notes } from "./notes";
-
-// поисковые роботы не нажимают «press any key» — им сразу показываем сайт.
-// Это не подмена контента: роботы видят ровно то, что человек увидит после загрузки
-const isBot = () =>
-  navigator.webdriver ||
-  /bot|crawl|spider|slurp|yandex|google|bing|duckduck|baidu|facebookexternalhit|telegram|lighthouse|headless|gpt|chatgpt|openai|claude|anthropic|perplexity|meta-external|ccbot/i.test(
-    navigator.userAgent,
-  );
+import { isBot } from "./bot";
 
 const App: React.FC = () => {
   useDisableContextMenu();
