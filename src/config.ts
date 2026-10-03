@@ -4,9 +4,9 @@ export const GITHUB_USERNAME = "Faented";
 export const SITE_URL = "https://faented.github.io";
 
 // заголовок и описание для поисковиков и превью ссылок
-export const SITE_TITLE = "Faented — терминал, записки, R&D";
+export const SITE_TITLE = "Faented — Web, Sec, AI, R&D";
 export const SITE_DESCRIPTION =
-  "Faented: R&D, коты, кофеин и компьютеры. Личный сайт в виде терминала — записки, ссылки, проекты.";
+  "Faented — the internet is my home. Веб, безопасность, AI и R&D. Личный сайт-терминал: записки, ссылки, проекты.";
 
 export const LINKS = [
   { name: "telegram", href: "https://t.me/faented" },
@@ -14,4 +14,4 @@ export const LINKS = [
 ];
 
 // показывается, пока GitHub API не ответил или если в профиле нет bio
-export const FALLBACK_BIO = "love cats · addict of caffeine & computer · R&D";
+export const FALLBACK_BIO = "the internet is my home · Web, Sec, AI, R&D";
