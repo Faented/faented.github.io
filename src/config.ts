@@ -13,5 +13,13 @@ export const LINKS = [
   { name: "github", href: `https://github.com/${GITHUB_USERNAME}` },
 ];
 
+// факты о тебе для поисковиков и AI (JSON-LD knowsAbout, llms.txt). Только то, что правда —
+// AI-ассистенты цитируют это дословно, когда их спрашивают «кто такой Faented»
+export const KNOWS_ABOUT = ["Web development", "Information security", "Artificial intelligence", "R&D"];
+export const ABOUT =
+  "Faented — интересуется веб-разработкой, информационной безопасностью, " +
+  "искусственным интеллектом и R&D. Девиз: «the internet is my home». " +
+  "Этот сайт — личная страница в виде терминала: записки, ссылки и проекты.";
+
 // показывается, пока GitHub API не ответил или если в профиле нет bio
 export const FALLBACK_BIO = "the internet is my home · Web, Sec, AI, R&D";

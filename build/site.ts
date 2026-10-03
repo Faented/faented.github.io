@@ -12,7 +12,9 @@ import { resolve } from "node:path";
 import { Marked } from "marked";
 import type { Plugin } from "vite";
 import {
+  ABOUT,
   FALLBACK_BIO,
+  KNOWS_ABOUT,
   GITHUB_USERNAME,
   LINKS,
   SITE_DESCRIPTION,
@@ -53,8 +55,19 @@ export interface BuiltNote {
   modified: string; // дата последнего коммита файла (ISO), для sitemap
 }
 
+// HTML → текст: блочные теги дают пробел между абзацами, а строчные (<strong>, <code>) исчезают бесследно,
+// чтобы не было «Markdown -файлы»
 const plain = (html: string) =>
-  html.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+  html
+    .replace(/<\/?(p|h[1-6]|li|ul|ol|pre|blockquote|br|hr|tr|td|th)\b[^>]*>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const gitDate = (file: string) => {
   try {
@@ -114,7 +127,8 @@ const person = {
   name: GITHUB_USERNAME,
   url: SITE_URL,
   image: AVATAR,
-  description: FALLBACK_BIO,
+  description: ABOUT,
+  knowsAbout: KNOWS_ABOUT,
   sameAs: LINKS.map((l) => l.href),
 };
 
@@ -185,6 +199,7 @@ const page = (o: {
   body: string;
   ld?: object;
   noindex?: boolean;
+  markdown?: string; // адрес .md-версии страницы — AI читают её проще, чем HTML
 }) => `<!doctype html>
 <html lang="ru">
 <head>
@@ -193,6 +208,8 @@ const page = (o: {
 ${o.noindex ? '<meta name="robots" content="noindex" />' : ""}${headMeta(o)}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+${o.markdown ? `<link rel="alternate" type="text/markdown" href="${o.markdown}" />` : ""}
+<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
 <meta name="theme-color" content="#000000" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -217,6 +234,7 @@ const notePage = (n: BuiltNote) =>
     description: n.description || SITE_DESCRIPTION,
     path: `/notes/${encodeURIComponent(n.slug)}/`,
     type: "article",
+    markdown: `/notes/${encodeURIComponent(n.slug)}.md`,
     windowTitle: `~/notes/${n.slug}`,
     ld: {
       "@context": "https://schema.org",
@@ -307,11 +325,78 @@ ${entries.map((e) => `  <url><loc>${e.loc}</loc><lastmod>${e.lastmod}</lastmod><
 `;
 };
 
+// AI-роботы и так попадают под `*`, но явный список — сигнал, что сайт открыт для них намеренно.
+// Чтобы закрыть какой-то из них, замени его Allow на Disallow
+const AI_BOTS = [
+  "GPTBot", // OpenAI: обучение
+  "OAI-SearchBot", // ChatGPT Search
+  "ChatGPT-User", // ChatGPT открывает ссылку по просьбе пользователя
+  "ClaudeBot", // Anthropic: обучение
+  "Claude-SearchBot", // поиск в Claude
+  "Claude-User", // Claude открывает ссылку по просьбе пользователя
+  "PerplexityBot",
+  "Perplexity-User",
+  "Google-Extended", // Gemini и AI Overviews
+  "Applebot-Extended", // Apple Intelligence
+  "Meta-ExternalAgent",
+  "CCBot", // Common Crawl — на нём учатся многие модели
+  "YandexAdditional", // Алиса и нейропоиск Яндекса
+];
+
 const robots = () => `User-agent: *
+Allow: /
+
+${AI_BOTS.map((b) => `User-agent: ${b}`).join("\n")}
 Allow: /
 
 Sitemap: ${url("/sitemap.xml")}
 `;
+
+// ---------- для AI: llms.txt (стандарт llmstxt.org) и Markdown-версии ----------
+
+const linksMd = () => LINKS.map((l) => `- [${l.name}](${l.href})`).join("\n");
+
+// краткая карта сайта для LLM: кто, о чём, где что лежит
+const llmsTxt = (notes: BuiltNote[]) => `# ${GITHUB_USERNAME}
+
+> ${ABOUT}
+
+Интересы: ${KNOWS_ABOUT.join(", ")}.
+Сайт: ${SITE_URL} — интерактивный терминал (SPA). Весь контент также доступен как статические страницы и Markdown по ссылкам ниже.
+
+## Ссылки
+
+${linksMd()}
+
+## Записки
+
+${notes.length ? notes.map((n) => `- [${n.title}](${url(`/notes/${encodeURIComponent(n.slug)}.md`)}): ${n.description}`).join("\n") : "- пока нет"}
+
+## Optional
+
+- [Весь контент одним файлом](${url("/llms-full.txt")})
+- [Sitemap](${url("/sitemap.xml")})
+`;
+
+const noteMd = (n: BuiltNote) => `# ${n.title}
+
+Автор: ${GITHUB_USERNAME} · ${n.date} · ${noteUrl(n.slug)}
+
+${n.body}
+`;
+
+// всё сразу — чтобы AI мог прочитать сайт целиком одним запросом
+const llmsFullTxt = (notes: BuiltNote[]) => `# ${GITHUB_USERNAME}
+
+> ${ABOUT}
+
+Интересы: ${KNOWS_ABOUT.join(", ")}.
+
+## Ссылки
+
+${linksMd()}
+
+${notes.map((n) => `---\n\n${noteMd(n)}`).join("\n")}`;
 
 // ---------- главная ----------
 
@@ -338,6 +423,7 @@ const homeHead = () =>
 const homeFallback = (notes: BuiltNote[]) => `<div class="seo-fallback">
 <h1>${GITHUB_USERNAME}</h1>
 <p>${esc(FALLBACK_BIO)}</p>
+<p>${esc(ABOUT)}</p>
 <nav>${LINKS.map((l) => `<a href="${l.href}" rel="me">${l.name}</a>`).join(" · ")}</nav>
 <h2><a href="/notes/">Записки</a></h2>
 ${noteList(notes)}
@@ -357,5 +443,8 @@ export const seoPlugin = (): Plugin => ({
     for (const n of notes) emit(`notes/${n.slug}/index.html`, notePage(n));
     emit("sitemap.xml", sitemap(notes));
     emit("robots.txt", robots());
+    emit("llms.txt", llmsTxt(notes));
+    emit("llms-full.txt", llmsFullTxt(notes));
+    for (const n of notes) emit(`notes/${n.slug}.md`, noteMd(n));
   },
 });

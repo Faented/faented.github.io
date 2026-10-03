@@ -22,7 +22,7 @@ The site is served from the domain root, so Vite has no `base` configured and as
 
 ## Architecture
 
-Personal values live in `src/config.ts`: GitHub username, `SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, `LINKS` and the fallback bio. Change them there, not in components; both the app and the build read them.
+Personal values live in `src/config.ts`: GitHub username, `SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, `LINKS`, `KNOWS_ABOUT`/`ABOUT` and the fallback bio. Change them there, not in components; both the app and the build read them.
 
 ## SEO / static pages (`build/site.ts`)
 
@@ -32,6 +32,15 @@ The app is a hash-routed SPA behind a click-to-boot screen, which search engines
   - fills `<!--seo:head-->` in `index.html` with title, description, canonical, Open Graph and JSON-LD (`WebSite` + `ProfilePage` + `Person`);
   - fills `<!--seo:fallback-->` inside `#root` with a plain-HTML version of the home page. React replaces it on mount; CSS shows it to people only if JS fails to start within 3s;
   - emits `notes/index.html`, `notes/<slug>/index.html` (full note, `BlogPosting` JSON-LD), `404.html`, `sitemap.xml` (lastmod from the git commit date of each note) and `robots.txt`.
+
+For AI search and assistants (most of their crawlers don't run JS):
+- `llms.txt` (llmstxt.org format) is a short Markdown map of who/what/where;
+- `llms-full.txt` is all content in one file;
+- each note also ships as `notes/<slug>.md`, linked from its HTML page via `<link rel="alternate" type="text/markdown">`;
+- `robots.txt` explicitly allows the AI crawlers listed in `AI_BOTS`;
+- the `Person` JSON-LD carries `knowsAbout` and `description` from `KNOWS_ABOUT`/`ABOUT` in `config.ts`.
+
+Keep `ABOUT` strictly factual: assistants quote it verbatim when asked about the author.
 
 The static pages are standalone HTML with inline CSS (`STYLE`) that mimics the terminal; they link to the SPA via `/#/notes/<slug>`. When you change the look of `.md` in `src/index.css`, mirror it in `STYLE`. `App.tsx` skips the boot screen for crawlers (`isBot()`), and sets `document.title` per route. Imports inside the Vite config graph use explicit `.ts` extensions (`allowImportingTsExtensions`), which Vite's native config loader requires.
 
