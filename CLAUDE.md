@@ -18,6 +18,10 @@ There are no tests and no linter configured. `npm run build` is the only correct
 
 Pushing to `main` (or a manual run from the Actions tab) triggers `.github/workflows/deploy.yml`. It runs `npm ci && npm run build` on Node 20 and pushes `dist/` to the `gh-pages` branch with the `gh-pages` package. GitHub Pages is set to publish from the `gh-pages` branch, so the branch contents are what's live. Never commit to `gh-pages` by hand: any commit there, including the `CNAME` commits GitHub makes when you edit Custom domain in Settings → Pages, redeploys whatever the branch holds. `npm run deploy` does the same publish from a local machine. `public/.nojekyll` disables Jekyll on the branch build. To use a custom domain, commit `public/CNAME`; setting it in the GitHub UI gets wiped by the next deploy.
 
+After publishing, the workflow runs `scripts/indexnow.mjs`, which pings IndexNow (`api.indexnow.org`, which fans out to Bing/DuckDuckGo, Yandex and others) with the changed URLs: always `/`, plus `/notes/` and each added, modified or deleted note since `github.event.before`. That's why checkout uses `fetch-depth: 0`. Before sending, the script waits until the key file and new pages are actually live on Pages. The key is `public/<32-hex>.txt`; it's public by design, so don't rename or delete it. The step is `continue-on-error`, so it never fails a deploy. Test locally with `DRY_RUN=1 BEFORE=<sha> node scripts/indexnow.mjs`.
+
+Search-engine verification lives in `index.html` (Google and Bing meta tags) and `public/` (`google*.html`, `yandex_*.html`). Never remove these; engines re-check them.
+
 The site is served from the domain root, so Vite has no `base` configured and assets use absolute paths like `/background.mp4`, which comes from `public/`.
 
 ## Architecture

@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # полная история: IndexNow сравнивает записки с прошлым пушем
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -27,3 +30,10 @@ jobs:
           npx gh-pages -d dist -t \
             -m "Deploy ${GITHUB_SHA::7}" \
             -r "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+      # сообщаем Bing (→ DuckDuckGo), Яндексу и др., что страницы обновились. Сбой здесь не роняет деплой
+      - name: Notify search engines (IndexNow)
+        continue-on-error: true
+        timeout-minutes: 12
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: node scripts/indexnow.mjs
