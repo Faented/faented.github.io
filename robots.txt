@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://faented.github.io/sitemap.xml
