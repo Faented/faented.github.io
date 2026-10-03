@@ -28,7 +28,7 @@
 <meta property="og:image:alt" content="Окно терминала: faented — the internet is my home · Web, Sec, AI, R&amp;D" />
 
 <meta name="twitter:card" content="summary_large_image" />
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://faented.github.io/#site","name":"Faented — Web, Sec, AI, R&D","alternateName":"Faented","url":"https://faented.github.io","description":"Faented — the internet is my home. Веб, безопасность, AI и R&D. Личный сайт-терминал: записки, ссылки, проекты.","inLanguage":"ru","author":{"@id":"https://faented.github.io/#me"},"publisher":{"@id":"https://faented.github.io/#me"}},{"@type":"ProfilePage","url":"https://faented.github.io","name":"Faented — Web, Sec, AI, R&D","inLanguage":"ru","isPartOf":{"@id":"https://faented.github.io/#site"},"dateCreated":"2026-08-31T11:12:03+03:00","dateModified":"2026-10-04T02:38:49+03:00","mainEntity":{"@id":"https://faented.github.io/#me"}},{"@type":"Person","@id":"https://faented.github.io/#me","name":"Faented","alternateName":["faented","@Faented"],"identifier":"Faented","url":"https://faented.github.io","image":"https://github.com/Faented.png","description":"Faented — интересуется веб-разработкой, информационной безопасностью, искусственным интеллектом и R&D. Девиз: «the internet is my home». Этот сайт — личная страница в виде терминала: записки, ссылки и проекты.","knowsAbout":["Web development","Information security","Artificial intelligence","R&D"],"sameAs":["https://t.me/faented","https://github.com/Faented"]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://faented.github.io/#site","name":"Faented — Web, Sec, AI, R&D","alternateName":"Faented","url":"https://faented.github.io","description":"Faented — the internet is my home. Веб, безопасность, AI и R&D. Личный сайт-терминал: записки, ссылки, проекты.","inLanguage":"ru","author":{"@id":"https://faented.github.io/#me"},"publisher":{"@id":"https://faented.github.io/#me"}},{"@type":"ProfilePage","url":"https://faented.github.io","name":"Faented — Web, Sec, AI, R&D","inLanguage":"ru","isPartOf":{"@id":"https://faented.github.io/#site"},"dateCreated":"2026-08-31T11:12:03+03:00","dateModified":"2026-10-04T02:42:47+03:00","mainEntity":{"@id":"https://faented.github.io/#me"}},{"@type":"Person","@id":"https://faented.github.io/#me","name":"Faented","alternateName":["faented","@Faented"],"identifier":"Faented","url":"https://faented.github.io","image":"https://github.com/Faented.png","description":"Faented — интересуется веб-разработкой, информационной безопасностью, искусственным интеллектом и R&D. Девиз: «the internet is my home». Этот сайт — личная страница в виде терминала: записки, ссылки и проекты.","knowsAbout":["Web development","Information security","Artificial intelligence","R&D"],"sameAs":["https://t.me/faented","https://github.com/Faented"]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -56,12 +56,11 @@
   .seo-fallback li { display: flex; gap: 16px; }
   @keyframes seo-show { to { opacity: 1; } }
 </style>
-<link
-  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
-  <script type="module" crossorigin src="/assets/index-BBsYFn7m.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DD4zhTda.css">
+<!-- шрифты не блокируют первую отрисовку: страница сразу рисуется системным шрифтом, потом подменяется -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap" /></noscript>
+  <script type="module" crossorigin src="/assets/index-Ba6tQEE-.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Cju9PhX9.css">
 </head>
 <body>
 <div id="root"><div class="seo-fallback">
