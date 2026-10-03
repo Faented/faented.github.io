@@ -35,10 +35,9 @@
   .seo-fallback li { display: flex; gap: 16px; }
   @keyframes seo-show { to { opacity: 1; } }
 </style>
-<link
-  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<!-- шрифты не блокируют первую отрисовку: страница сразу рисуется системным шрифтом, потом подменяется -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap" /></noscript>
 </head>
 <body>
 <div id="root"><!--seo:fallback--></div>

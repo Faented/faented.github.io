@@ -274,7 +274,8 @@ ${o.markdown ? `<link rel="alternate" type="text/markdown" href="${o.markdown}" 
 <meta name="theme-color" content="#000000" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" /></noscript>
 <style>${STYLE}</style>
 ${o.ld ? jsonLd(o.ld) : ""}
 </head>

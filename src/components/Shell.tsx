@@ -3,6 +3,7 @@ import { Prompt, PromptPrefix } from "./Prompt";
 import { useTerminal } from "../terminal";
 import { notes } from "../notes";
 import { FALLBACK_BIO, LINKS } from "../config";
+import { SiteLink, noteHref, noteSpa } from "./SiteLink";
 
 interface Entry {
   cmd: string;
@@ -36,9 +37,9 @@ const dirs: Record<string, () => React.ReactNode> = {
     ) : (
       <div className="flex flex-col">
         {notes.map((n) => (
-          <a key={n.slug} href={`#/notes/${n.slug}`} className={item}>
+          <SiteLink key={n.slug} href={noteHref(n.slug)} spa={noteSpa(n.slug)} className={item}>
             {n.slug}.md
-          </a>
+          </SiteLink>
         ))}
       </div>
     ),
@@ -149,9 +150,9 @@ const commands: Record<string, [string, (args: string[], ctx: Ctx) => React.Reac
       <ul>
         {notes.slice(0, 5).map((n) => (
           <li key={n.slug}>
-            <a href={`#/notes/${n.slug}`} className={item}>
+            <SiteLink href={noteHref(n.slug)} spa={noteSpa(n.slug)} className={item}>
               <span className="text-white/40">{n.date}</span> {n.title}
-            </a>
+            </SiteLink>
           </li>
         ))}
       </ul>

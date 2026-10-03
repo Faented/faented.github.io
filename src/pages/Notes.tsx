@@ -1,6 +1,7 @@
 import React from "react";
 import { Prompt } from "../components/Prompt";
 import { notes } from "../notes";
+import { SiteLink, noteHref, noteSpa } from "../components/SiteLink";
 
 const Back: React.FC<{ href: string }> = ({ href }) => (
   <a href={href} className="hover:text-accent transition-colors">
@@ -31,10 +32,10 @@ export const Notes: React.FC<{ slug?: string }> = ({ slug }) => {
       <ul className="space-y-1">
         {notes.map((n) => (
           <li key={n.slug}>
-            <a href={`#/notes/${n.slug}`} className="group flex gap-4">
+            <SiteLink href={noteHref(n.slug)} spa={noteSpa(n.slug)} className="group flex gap-4">
               <span className="text-white/40">{n.date}</span>
               <span className="group-hover:text-accent transition-colors">{n.title}</span>
-            </a>
+            </SiteLink>
           </li>
         ))}
       </ul>

@@ -21,7 +21,7 @@ export const Home: React.FC<{ user: GitHubUser | null }> = ({ user }) => (
       >
         <img
           src={user ? `${user.avatar_url}&s=240` : `https://github.com/${username}.png`}
-          alt={user?.login ?? username}
+          alt={`Аватар ${user?.login ?? username}`}
           width={96}
           height={96}
           decoding="async"
