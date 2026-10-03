@@ -1,0 +1,20 @@
+# Faented
+
+> Faented — интересуется веб-разработкой, информационной безопасностью, искусственным интеллектом и R&D. Девиз: «the internet is my home». Этот сайт — личная страница в виде терминала: записки, ссылки и проекты.
+
+Интересы: Web development, Information security, Artificial intelligence, R&D.
+Сайт: https://faented.github.io — интерактивный терминал (SPA). Весь контент также доступен как статические страницы и Markdown по ссылкам ниже.
+
+## Ссылки
+
+- [telegram](https://t.me/faented)
+- [github](https://github.com/Faented)
+
+## Записки
+
+- [hello, world](https://faented.github.io/notes/2026-09-29-hello.md): Первая записка. Записки — это Markdown-файлы в src/notes/. Как добавить Создай src/notes/ГГГГ-ММ-ДД-название.md Первая строка — # Заголовок Запушь в main,…
+
+## Optional
+
+- [Весь контент одним файлом](https://faented.github.io/llms-full.txt)
+- [Sitemap](https://faented.github.io/sitemap.xml)
