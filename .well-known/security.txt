@@ -1,0 +1,5 @@
+Contact: https://t.me/faented
+Contact: https://github.com/Faented
+Expires: 2027-10-03T23:39:13Z
+Preferred-Languages: ru, en
+Canonical: https://faented.github.io/.well-known/security.txt

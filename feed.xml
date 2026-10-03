@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+  <title>Записки Faented</title>
+  <link>https://faented.github.io/notes/</link>
+  <atom:link href="https://faented.github.io/feed.xml" rel="self" type="application/rss+xml" />
+  <description>Faented — интересуется веб-разработкой, информационной безопасностью, искусственным интеллектом и R&amp;D. Девиз: «the internet is my home». Этот сайт — личная страница в виде терминала: записки, ссылки и проекты.</description>
+  <language>ru</language>
+  <lastBuildDate>Sat, 03 Oct 2026 23:38:49 GMT</lastBuildDate>
+  <image><url>https://faented.github.io/apple-touch-icon.png</url><title>Записки Faented</title><link>https://faented.github.io/notes/</link></image>
+  <item>
+    <title>hello, world</title>
+    <link>https://faented.github.io/notes/2026-09-29-hello/</link>
+    <guid isPermaLink="true">https://faented.github.io/notes/2026-09-29-hello/</guid>
+    <pubDate>Tue, 29 Sep 2026 00:00:00 GMT</pubDate>
+    <description>Первая записка: как устроены записки на сайте и как добавить новую через Markdown.</description>
+    <category>markdown</category>
+    <category>заметки</category>
+    <category>сайт</category>
+    <content:encoded><![CDATA[<p>Первая записка. Записки — это <strong>Markdown</strong>-файлы в <code>src/notes/</code>.</p>
+<h2>Как добавить</h2>
+<ol>
+<li>Создай <code>src/notes/ГГГГ-ММ-ДД-название.md</code></li>
+<li>Первая строка — <code># Заголовок</code></li>
+<li>Запушь в <code>main</code>, сайт пересоберётся сам</li>
+</ol>
+<h2>Что умеет</h2>
+<ul>
+<li><strong>жирный</strong>, <em>курсив</em>, <code>код</code></li>
+<li>ссылки: <a href="https://t.me/faented" target="_blank" rel="noopener noreferrer">мой telegram</a></li>
+<li>цитаты и блоки кода</li>
+</ul>
+<blockquote>
+<p>love cats · caffeine &amp; computer · R&amp;D</p>
+</blockquote>
+<pre><code class="language-bash">cat notes/2026-09-29-hello.md
+</code></pre>
+]]></content:encoded>
+  </item>
+</channel>
+</rss>

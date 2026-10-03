@@ -12,9 +12,10 @@
 
 ## Записки
 
-- [hello, world](https://faented.github.io/notes/2026-09-29-hello.md): Первая записка. Записки — это Markdown-файлы в src/notes/. Как добавить Создай src/notes/ГГГГ-ММ-ДД-название.md Первая строка — # Заголовок Запушь в main,…
+- [hello, world](https://faented.github.io/notes/2026-09-29-hello.md): Первая записка: как устроены записки на сайте и как добавить новую через Markdown.
 
 ## Optional
 
 - [Весь контент одним файлом](https://faented.github.io/llms-full.txt)
+- [RSS записок](https://faented.github.io/feed.xml)
 - [Sitemap](https://faented.github.io/sitemap.xml)
