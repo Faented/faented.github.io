@@ -17,9 +17,7 @@ export const Notes: React.FC<{ slug?: string }> = ({ slug }) => {
         <Prompt cmd={`cat notes/${note.slug}.md`} />
         <h2 className="text-lg text-white">{note.title}</h2>
         <p className="text-white/40">{note.date}</p>
-        <div className="whitespace-pre-wrap select-text text-white/80 leading-relaxed">
-          {note.body}
-        </div>
+        <div className="md select-text" dangerouslySetInnerHTML={{ __html: note.html }} />
         <Back href="#/notes" />
       </div>
     );

@@ -3,24 +3,24 @@ export interface Note {
   date: string;
   title: string;
   body: string;
+  html: string; // body, отрендеренный из Markdown при сборке (плагин notes-markdown в vite.config.ts)
 }
 
-const files = import.meta.glob("./notes/*.md", {
-  query: "?raw",
+const files = import.meta.glob<{ title: string | null; body: string; html: string }>("./notes/*.md", {
+  query: "?note",
   import: "default",
   eager: true,
-}) as Record<string, string>;
+});
 
 export const notes: Note[] = Object.entries(files)
-  .map(([path, raw]) => {
+  .map(([path, note]) => {
     const slug = path.replace(/^.*\/|\.md$/g, "");
-    const [first, ...rest] = raw.trim().split("\n");
-    const hasTitle = first.startsWith("# ");
     return {
       slug,
       date: slug.slice(0, 10),
-      title: hasTitle ? first.slice(2).trim() : slug.slice(11),
-      body: (hasTitle ? rest : [first, ...rest]).join("\n").trim(),
+      title: note.title ?? slug.slice(11),
+      body: note.body,
+      html: note.html,
     };
   })
   .sort((a, b) => b.slug.localeCompare(a.slug));

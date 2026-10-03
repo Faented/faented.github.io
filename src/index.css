@@ -11,6 +11,35 @@
 
 @tailwind utilities;
 
+/* Markdown в записках, в стиле терминала */
+@layer components {
+    .md {
+        @apply text-white/80 leading-relaxed space-y-3 break-words;
+    }
+    .md h1,
+    .md h2,
+    .md h3 {
+        @apply text-white font-semibold;
+    }
+    .md h1::before { content: "# "; @apply text-accent; }
+    .md h2::before { content: "## "; @apply text-accent; }
+    .md h3::before { content: "### "; @apply text-accent; }
+    .md strong { @apply text-white font-semibold; }
+    .md em { @apply italic; }
+    .md a { @apply text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent; }
+    .md code { @apply bg-white/10 px-1; }
+    .md pre { @apply bg-black/40 border border-white/10 p-3 overflow-x-auto no-scrollbar; }
+    .md pre code { @apply bg-transparent p-0; }
+    .md ul > li::before { content: "- "; @apply text-accent; }
+    .md ol { @apply list-decimal list-inside marker:text-accent; }
+    .md blockquote { @apply border-l-2 border-accent/50 pl-3 text-white/60; }
+    .md hr { @apply border-white/10; }
+    .md img { @apply max-w-full border border-white/10; }
+    .md table { @apply border-collapse; }
+    .md th,
+    .md td { @apply border border-white/15 px-2 py-1; }
+}
+
 @layer utilities {
     @keyframes float {
         0% {

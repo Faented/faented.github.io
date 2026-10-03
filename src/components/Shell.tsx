@@ -110,7 +110,7 @@ const cat = ([target]: string[], { cwd }: Ctx) => {
       <p className="text-white">
         # {note.title} <span className="text-white/40">· {note.date}</span>
       </p>
-      <p className="whitespace-pre-wrap text-white/80">{note.body}</p>
+      <div className="md" dangerouslySetInnerHTML={{ __html: note.html }} />
     </div>
   );
 };
@@ -182,7 +182,7 @@ const exec = (line: string, ctx: Ctx): Entry => {
 const initial = ["whoami", "help"];
 
 export const Shell: React.FC = () => {
-  const [cwd, setCwd] = useState("");
+  const { cwd, setCwd } = useTerminal();
   const [history, setHistory] = useState<Entry[]>(() =>
     initial.map((line) => exec(line, { cwd: "", cd: () => {} })),
   );

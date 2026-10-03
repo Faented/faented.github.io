@@ -14,14 +14,17 @@ const App: React.FC = () => {
   useDisableContextMenu();
   const route = useHashRoute();
 
-  // загрузку показываем один раз за вкладку
+  // загрузку показываем один раз за вкладку и не показываем тем, кто пришёл по прямой ссылке (#/notes/...)
   const [booted, setBooted] = useState(() => {
+    if (route !== "/") return true;
     try {
       return sessionStorage.getItem("booted") === "1";
     } catch {
       return false;
     }
   });
+  // текущая папка терминала — живёт здесь, чтобы её видел и заголовок окна
+  const [cwd, setCwd] = useState("");
   const finishBoot = useCallback(() => {
     try {
       sessionStorage.setItem("booted", "1");
@@ -71,6 +74,8 @@ const App: React.FC = () => {
             user: (user?.login ?? GITHUB_USERNAME).toLowerCase(),
             host: __COMMIT__,
             bio: user?.bio ?? null,
+            cwd,
+            setCwd,
           }}
         >
           {notesMatch ? (
@@ -78,7 +83,7 @@ const App: React.FC = () => {
               <Notes slug={notesMatch[1]} />
             </Window>
           ) : (
-            <Window path="~">
+            <Window path={cwd ? `~/${cwd}` : "~"}>
               <Home user={user} username={GITHUB_USERNAME} />
             </Window>
           )}
