@@ -9,10 +9,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src", "vite.config.ts"],
+  "include": ["src", "build", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

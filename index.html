@@ -3,23 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Faented</title>
-<meta name="description" content="Faented — love cats, caffeine & computer, R&D. Терминал вместо визитки." />
+<!-- title, description, canonical, Open Graph и JSON-LD генерирует build/site.ts из src/config.ts -->
+<!--seo:head-->
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-<link rel="canonical" href="https://faented.github.io/" />
-
-<!-- превью ссылки в Telegram, Discord, VK, X -->
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="faented.github.io" />
-<meta property="og:url" content="https://faented.github.io/" />
-<meta property="og:title" content="Faented" />
-<meta property="og:description" content="love cats · caffeine & computer · R&D" />
-<meta property="og:image" content="https://faented.github.io/og.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Окно терминала: faented — love cats, caffeine & computer, R&D" />
-<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="preconnect" href="https://api.github.com" crossorigin />
@@ -29,6 +16,21 @@
   html {
     background: #000;
   }
+  /* текстовая версия главной для роботов без JS. React заменяет её при запуске;
+     человеку она покажется, только если JS не загрузился за 3 секунды */
+  .seo-fallback {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 16px;
+    font: 14px/1.7 ui-monospace, Consolas, monospace;
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 0;
+    animation: seo-show 0.3s 3s forwards;
+  }
+  .seo-fallback a { color: #5eead4; }
+  .seo-fallback ul { list-style: none; padding: 0; }
+  .seo-fallback li { display: flex; gap: 16px; }
+  @keyframes seo-show { to { opacity: 1; } }
 </style>
 <link
   href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@400;600&display=swap"
@@ -36,7 +38,7 @@
 />
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><!--seo:fallback--></div>
 <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

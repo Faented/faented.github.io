@@ -7,7 +7,16 @@ import { Window } from "./components/Window";
 import { Home, GitHubUser } from "./pages/Home";
 import { Notes } from "./pages/Notes";
 import { TerminalContext } from "./terminal";
-import { GITHUB_USERNAME } from "./config";
+import { GITHUB_USERNAME, SITE_TITLE } from "./config";
+import { notes } from "./notes";
+
+// поисковые роботы не нажимают «press any key» — им сразу показываем сайт.
+// Это не подмена контента: роботы видят ровно то, что человек увидит после загрузки
+const isBot = () =>
+  navigator.webdriver ||
+  /bot|crawl|spider|slurp|yandex|google|bing|duckduck|baidu|facebookexternalhit|telegram|lighthouse|headless/i.test(
+    navigator.userAgent,
+  );
 
 const App: React.FC = () => {
   useDisableContextMenu();
@@ -15,7 +24,7 @@ const App: React.FC = () => {
 
   // загрузку показываем один раз за вкладку и не показываем тем, кто пришёл по прямой ссылке (#/notes/...)
   const [booted, setBooted] = useState(() => {
-    if (route !== "/") return true;
+    if (route !== "/" || isBot()) return true;
     try {
       return sessionStorage.getItem("booted") === "1";
     } catch {
@@ -62,6 +71,16 @@ const App: React.FC = () => {
   }, []);
 
   const notesMatch = route.match(/^\/notes(?:\/(.+))?$/);
+
+  // заголовок вкладки следует за страницей: его видно в истории, закладках и при шаринге
+  useEffect(() => {
+    const note = notesMatch?.[1] && notes.find((n) => n.slug === notesMatch[1]);
+    document.title = note
+      ? `${note.title} — ${GITHUB_USERNAME}`
+      : notesMatch
+        ? `Записки — ${GITHUB_USERNAME}`
+        : SITE_TITLE;
+  }, [route]);
 
   return (
     <div className="relative flex items-center justify-center min-h-screen min-h-[100dvh] overflow-hidden py-10">
